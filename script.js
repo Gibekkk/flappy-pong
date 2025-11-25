@@ -30,8 +30,12 @@ let healthBarWidth = 60;
 let ballSpeedHorizon = 10;
 let gameScreen = 0;
 
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
+
 function setup() {
-  createCanvas(500, 500);
+  createCanvas(windowWidth, windowHeight);
   ballX = width / 4;
   ballY = height / 5;
   ballColor = color(0);
