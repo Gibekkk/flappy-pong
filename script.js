@@ -12,7 +12,7 @@ let racketHeight = 10;
 let racketBounceRate = 20;
 
 let wallSpeed = 5;
-let wallInterval = 1000;
+let wallInterval = 3000;
 let lastAddTime = 0;
 let minGapHeight = 200;
 let maxGapHeight = 300;
@@ -40,7 +40,6 @@ function setup() {
   ballY = height / 5;
   ballColor = color(0);
   racketColor = color(0);
-  wallColors = color(255, 0, 0);
 }
 
 function draw() {
@@ -161,9 +160,10 @@ function makeBounceRight(surface) {
 
 function wallAdder() {
   if (millis() - lastAddTime > wallInterval) {
+    wallColors = color(Math.random() * 255, Math.random() * 255, Math.random() * 255);
     let randHeight = round(random(minGapHeight, maxGapHeight));
     let randY = round(random(0, height - randHeight));
-    walls.push([width, randY, wallWidth, randHeight, 0]);
+    walls.push([width, randY, wallWidth, randHeight, 0, wallColors]);
     lastAddTime = millis();
   }
 }
@@ -178,9 +178,9 @@ function wallHandler() {
 }
 
 function wallDrawer(index) {
-  let [x, y, w, h] = walls[index];
+  let [x, y, w, h, _, color] = walls[index];
   rectMode(CORNER);
-  fill(wallColors);
+  fill(color);
   rect(x, 0, w, y, 0,0,50,50);
   rect(x, y + h, w, height - (y + h), 50,50,0,0);
 }
