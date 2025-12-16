@@ -1,68 +1,260 @@
+let ballX, ballY;
+let ballSize = 20;
+let ballColor;
+let gravity = 1;
+let ballSpeedVert = 0;
+let airFriction = 0.0001;
+let friction = 0.1;
 
-class ArrayList extends Array {
-    constructor() {super(...[]);}
-    size() {return this.length;}
-    add(x) {this.push(x);}
-    get(i) {return this[i];}
-    remove(i) {this.splice(i,1);}
+let racketColor;
+let racketWidth = 100;
+let racketHeight = 10;
+let racketBounceRate = 20;
+
+let wallSpeed = 5;
+let wallInterval = 3000;
+let lastAddTime = 0;
+let minGapHeight = 200;
+let maxGapHeight = 300;
+let wallWidth = 80;
+let wallColors;
+let walls = [];
+let score = 0;
+let wallRadius = 50;
+
+let maxHealth = 100;
+let health = 100;
+let healthDecrease = 1;
+let healthBarWidth = 60;
+
+let ballSpeedHorizon = 10;
+let gameScreen = 0;
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
 }
 
- // Aplikasi Paint 2D Interaktif - Processing
-// Fitur lengkap: Drawing, Transform, Selection, Windowing & Clipping
-let shapes = new ArrayList(); let selectedShapes = new ArrayList(); let history = new ArrayList(); let historyIndex = - 1 ; // State
-let mode = "select" ; // select, point, line, rectangle, ellipse, window
-let isDrawing = false ; let startPoint = new p5.Vector ( ) ; let currentShape = null ; // Atribut
-let currentColor ; let strokeWeight = 2 ; let fillEnabled = false ; // Clipping Window
-let clipWindow = null ; let isSettingWindow = false ; let showClipping = false ; // UI
-let showHelp = true ; let palette ; let selectedColorIndex = 0 ; function setup ( ) { createCanvas( 1400 , 800 ) ; surface . setTitle( "Paint 2D - Grafika Komputer" ) ; // Initialize palette
-palette= new Array(12); palette[ 0 ] = color( 0 , 0 , 0 ) ; palette[ 1 ] = color( 255 , 0 , 0 ) ; palette[ 2 ] = color( 0 , 255 , 0 ) ; palette[ 3 ] = color( 0 , 0 , 255 ) ; palette[ 4 ] = color( 255 , 255 , 0 ) ; palette[ 5 ] = color( 255 , 0 , 255 ) ; palette[ 6 ] = color( 0 , 255 , 255 ) ; palette[ 7 ] = color( 255 , 136 , 0 ) ; palette[ 8 ] = color( 139 , 69 , 19 ) ; palette[ 9 ] = color( 128 , 0 , 128 ) ; palette[ 10 ] = color( 0 , 128 , 0 ) ; palette[ 11 ] = color( 255 , 192 , 203 ) ; currentColor= palette[ 0 ] ; // Initialize history
-saveToHistory( ) ; } function draw ( ) { background( 255 ) ; // Draw grid
-drawGrid( ) ; // Apply clipping if enabled
-if ( showClipping&& clipWindow!= null ) { clip( clipWindow . x, clipWindow . y, clipWindow . w, clipWindow . h) ; } // Draw all shapes
-for ( let s of shapes) { s . display( ) ; } // Reset clip
-if ( showClipping&& clipWindow!= null ) { noClip( ) ; } // Draw current shape being created
-if ( currentShape!= null ) { currentShape . display( ) ; } // Draw clipping window
-if ( clipWindow!= null && ( showClipping|| isSettingWindow) ) { clipWindow . display( isSettingWindow) ; } // Draw selection
-for ( let s of selectedShapes) { s . drawSelection( ) ; } // Draw UI
-drawToolbar( ) ; drawInfoBar( ) ; if ( showHelp) { drawHelp( ) ; } } function drawGrid ( ) { stroke( 240 ) ; strokeWeight( 1 ) ; for ( let i = 0 ; i< width; i+= 50 ) { line( i, 80 , i, height) ; } for ( let i = 80 ; i< height; i+= 50 ) { line( 0 , i, width, i) ; } } function drawToolbar ( ) { // Background
-fill( 50 ) ; noStroke( ) ; rect( 0 , 0 , width, 70 ) ; // Tool buttons
-let tools = [ "Select" , "Point" , "Line" , "Rect" , "Ellipse" , "Window" ] ; let modeNames = [ "select" , "point" , "line" , "rectangle" , "ellipse" , "window" ] ; for ( let i = 0 ; i< tools . length; i++ ) { let x = 10 + i* 100 ; drawButton( x, 10 , 95 , 50 , tools[ i] , mode . equals( modeNames[ i] ) ) ; } // Color palette
-textAlign( LEFT_ARROW, CENTER) ; fill( 255 ) ; textSize( 12 ) ; text( "Colors:" , 630 , 25 ) ; for ( let i = 0 ; i< palette . length; i++ ) { let x = 690 + ( i% 6 ) * 30 ; let y = 10 + ( i/ 6 ) * 25 ; fill( palette[ i] ) ; stroke( selectedColorIndex== i? color( 100 , 200 , 255 ) : color( 150 ) ) ; strokeWeight( selectedColorIndex== i? 3 : 1 ) ; rect( x, y, 25 , 20 ) ; } // Stroke weight slider
-fill( 255 ) ; textAlign( LEFT_ARROW, CENTER) ; text( "Stroke: " + nf( strokeWeight, 0 , 1 ) , 880 , 25 ) ; stroke( 150 ) ; strokeWeight( 1 ) ; fill( 100 ) ; rect( 950 , 15 , 100 , 20 ) ; fill( 100 , 200 , 255 ) ; noStroke( ) ; let sliderX = map( strokeWeight, 1 , 20 , 950 , 1050 ) ; rect( 950 , 15 , sliderX- 950 , 20 ) ; // Fill toggle
-drawButton( 1070 , 10 , 80 , 50 , "Fill: " + ( fillEnabled? "ON" : "OFF" ) , fillEnabled) ; // Action buttons
-drawButton( 1160 , 10 , 80 , 25 , "Clip: " + ( showClipping? "ON" : "OFF" ) , showClipping) ; drawButton( 1160 , 35 , 80 , 25 , "Help" , showHelp) ; drawButton( 1250 , 10 , 70 , 25 , "Clear" , false ) ; drawButton( 1250 , 35 , 70 , 25 , "Save" , false ) ; // Undo/Redo
-drawButton( 1330 , 10 , 60 , 25 , "Undo" , false ) ; drawButton( 1330 , 35 , 60 , 25 , "Redo" , false ) ; } function drawButton ( x , y , w , h , label , active ) { if ( active) { fill( 70 , 130 , 255 ) ; } else { fill( 80 ) ; } // Hover effect
-if ( mouseX> x&& mouseX< x+ w&& mouseY> y&& mouseY< y+ h) { fill( active? color( 90 , 150 , 255 ) : color( 100 ) ) ; } noStroke( ) ; rect( x, y, w, h, 5 ) ; fill( 255 ) ; textAlign( CENTER, CENTER) ; textSize( 11 ) ; text( label, x+ w/ 2 , y+ h/ 2 ) ; } function drawInfoBar ( ) { fill( 40 ) ; noStroke( ) ; rect( 0 , 70 , width, 10 ) ; fill( 255 ) ; textAlign( LEFT_ARROW, CENTER) ; textSize( 10 ) ; text( "Objects: " + shapes . size( ) + " | Selected: " + selectedShapes . size( ) + " | Mode: " + mode . toUpperCase( ) , 10 , 75 ) ; } function drawHelp ( ) { // Panel background
-fill( 0 , 0 , 0 , 230 ) ; noStroke( ) ; rect( 10 , 90 , 420 , 550 , 10 ) ; // Header
-fill( 255 , 255 , 100 ) ; textAlign( LEFT_ARROW, TOP) ; textSize( 16 ) ; text( "📋 PANDUAN KONTROL" , 20 , 100 ) ; // Close button
-fill( 200 , 50 , 50 ) ; rect( 390 , 95 , 30 , 30 , 5 ) ; fill( 255 ) ; textAlign( CENTER, CENTER) ; textSize( 20 ) ; text( "×" , 405 , 110 ) ; // Content
-fill( 255 ) ; textAlign( LEFT_ARROW, TOP) ; textSize( 11 ) ; let helpText = [ "" , "🖱️ MOUSE:" , "  • Klik: Gambar point / Pilih objek" , "  • Drag: Gambar shape (garis, persegi, elips)" , "  • Shift+Klik: Multi-select objek" , "" , "⌨️ KEYBOARD SHORTCUTS:" , "  🎨 Tools:" , "    • V: Select tool" , "    • P: Point tool" , "    • L: Line tool" , "    • B: Box/Rectangle tool" , "    • E: Ellipse tool" , "    • W: Window/Clipping tool" , "" , "  ✏️ Transform (objek terpilih):" , "    • Arrow Keys (↑↓←→): Geser objek" , "    • R/r: Rotasi +15°/-15°" , "    • +/-: Scale 110%/90%" , "    • Delete/Backspace: Hapus objek" , "" , "  🔧 Other:" , "    • C: Toggle clipping ON/OFF" , "    • F: Toggle fill ON/OFF" , "    • H: Toggle help panel" , "    • Ctrl+A: Select all" , "    • Ctrl+Z: Undo" , "    • Ctrl+Y: Redo" , "    • Ctrl+S: Save image" , "    • Escape: Clear selection" , "" , "🪟 CLIPPING WINDOW:" , "  • Tekan W untuk Window mode" , "  • Drag mouse untuk set area" , "  • Tekan C untuk aktifkan clipping" , "" , "💡 TIPS:" , "  • Klik warna di palette untuk ganti warna" , "  • Drag slider untuk ubah ketebalan garis" ] ; let y = 140 ; for ( let line of helpText) { text( line, 20 , y) ; y+= 14 ; } } function mousePressed ( ) { // Check UI clicks
-if ( mouseY< 70 ) { handleUIClick( ) ; return ; } // Check help close button
-if ( showHelp&& mouseX> 390 && mouseX< 420 && mouseY> 95 && mouseY< 125 ) { showHelp= false ; return ; } // Drawing area
-isDrawing= true ; startPoint . set( mouseX, mouseY) ; if ( mode . equals( "select" ) ) { handleSelection( ) ; } else if ( mode . equals( "window" ) ) { isSettingWindow= true ; clipWindow= new ClipWindow ( mouseX, mouseY, 0 , 0 ) ; } else if ( mode . equals( "point" ) ) { let p = new Point ( mouseX, mouseY, currentColor, strokeWeight, fillEnabled) ; shapes . add( p) ; saveToHistory( ) ; } else { // Start creating shape
-if ( mode . equals( "line" ) ) { currentShape= new Line ( mouseX, mouseY, mouseX, mouseY, currentColor, strokeWeight, fillEnabled) ; } else if ( mode . equals( "rectangle" ) ) { currentShape= new Rectangle ( mouseX, mouseY, 0 , 0 , currentColor, strokeWeight, fillEnabled) ; } else if ( mode . equals( "ellipse" ) ) { currentShape= new Ellipse ( mouseX, mouseY, 0 , 0 , currentColor, strokeWeight, fillEnabled) ; } } } function mouseDragged ( ) { if ( ! isDrawing) return ; if ( mode . equals( "window" ) && isSettingWindow) { clipWindow . w= mouseX- clipWindow . x; clipWindow . h= mouseY- clipWindow . y; } else if ( currentShape!= null ) { if ( currentShapeinstanceof Line ) { ( ( Line ) currentShape) . x2 = mouseX; ( ( Line ) currentShape) . y2 = mouseY; } else if ( currentShapeinstanceof Rectangle ) { let r = ( Rectangle ) currentShape; r . x= min( startPoint . x, mouseX) ; r . y= min( startPoint . y, mouseY) ; r . w= abs( mouseX- startPoint . x) ; r . h= abs( mouseY- startPoint . y) ; } else if ( currentShapeinstanceof Ellipse ) { let e = ( Ellipse ) currentShape; e . x= min( startPoint . x, mouseX) ; e . y= min( startPoint . y, mouseY) ; e . w= abs( mouseX- startPoint . x) ; e . h= abs( mouseY- startPoint . y) ; } } } function mouseReleased ( ) { if ( currentShape!= null && ! mode . equals( "point" ) ) { shapes . add( currentShape) ; saveToHistory( ) ; currentShape= null ; } if ( isSettingWindow&& clipWindow!= null ) { // Normalize window
-if ( clipWindow . w< 0 ) { clipWindow . x+= clipWindow . w; clipWindow . w= abs( clipWindow . w) ; } if ( clipWindow . h< 0 ) { clipWindow . y+= clipWindow . h; clipWindow . h= abs( clipWindow . h) ; } isSettingWindow= false ; } isDrawing= false ; } function handleUIClick ( ) { // Tool buttons
-let modeNames = [ "select" , "point" , "line" , "rectangle" , "ellipse" , "window" ] ; for ( let i = 0 ; i< 6 ; i++ ) { let x = 10 + i* 100 ; if ( mouseX> x&& mouseX< x+ 95 && mouseY> 10 && mouseY< 60 ) { mode= modeNames[ i] ; if ( ! mode . equals( "select" ) ) { selectedShapes . clear( ) ; } return ; } } // Color palette
-for ( let i = 0 ; i< palette . length; i++ ) { let x = 690 + ( i% 6 ) * 30 ; let y = 10 + ( i/ 6 ) * 25 ; if ( mouseX> x&& mouseX< x+ 25 && mouseY> y&& mouseY< y+ 20 ) { currentColor= palette[ i] ; selectedColorIndex= i; // Update selected shapes
-for ( let s of selectedShapes) { s . col= currentColor; } return ; } } // Stroke weight slider
-if ( mouseX> 950 && mouseX< 1050 && mouseY> 15 && mouseY< 35 ) { strokeWeight= map( mouseX, 950 , 1050 , 1 , 20 ) ; for ( let s of selectedShapes) { s . strokeW= strokeWeight; } return ; } // Fill toggle
-if ( mouseX> 1070 && mouseX< 1150 && mouseY> 10 && mouseY< 60 ) { fillEnabled= ! fillEnabled; return ; } // Clip toggle
-if ( mouseX> 1160 && mouseX< 1240 && mouseY> 10 && mouseY< 35 ) { showClipping= ! showClipping; return ; } // Help toggle
-if ( mouseX> 1160 && mouseX< 1240 && mouseY> 35 && mouseY< 60 ) { showHelp= ! showHelp; return ; } // Clear button
-if ( mouseX> 1250 && mouseX< 1320 && mouseY> 10 && mouseY< 35 ) { if ( shapes . size( ) > 0 ) { shapes . clear( ) ; selectedShapes . clear( ) ; clipWindow= null ; saveToHistory( ) ; } return ; } // Save button
-if ( mouseX> 1250 && mouseX< 1320 && mouseY> 35 && mouseY< 60 ) { saveImage( ) ; return ; } // Undo
-if ( mouseX> 1330 && mouseX< 1390 && mouseY> 10 && mouseY< 35 ) { undo( ) ; return ; } // Redo
-if ( mouseX> 1330 && mouseX< 1390 && mouseY> 35 && mouseY< 60 ) { redo( ) ; return ; } } function handleSelection ( ) { let found = false ; let shiftPressed = keyPressed&& keyCode== SHIFT; if ( ! shiftPressed) { selectedShapes . clear( ) ; } for ( let i = shapes . size( ) - 1 ; i>= 0 ; i-- ) { let s = shapes . get( i) ; if ( s . contains( mouseX, mouseY) ) { if ( selectedShapes . contains( s) ) { selectedShapes . remove( s) ; } else { selectedShapes . add( s) ; } found= true ; break ; } } if ( ! found&& ! shiftPressed) { selectedShapes . clear( ) ; } } function keyPressed ( ) { // Handle arrow keys FIRST (for selected shapes)
-if ( key== CODED&& ! selectedShapes . isEmpty( ) ) { let needsSave = true ; for ( let s of selectedShapes) { if ( keyCode== UP_ARROW) { s . translate( 0 , - 10 ) ; } else if ( keyCode== DOWN_ARROW) { s . translate( 0 , 10 ) ; } else if ( keyCode== LEFT_ARROW) { s . translate( - 10 , 0 ) ; } else if ( keyCode== RIGHT_ARROW) { s . translate( 10 , 0 ) ; } else { needsSave= false ; } } if ( needsSave) { saveToHistory( ) ; } return ; // Exit after handling arrow keys
-} // Tool shortcuts (without Ctrl)
-if ( keyCode!= CONTROL&& keyCode!= 157 ) { if ( key== 'v' || key== 'V' ) { mode= "select" ; selectedShapes . clear( ) ; return ; } if ( key== 'p' || key== 'P' ) { mode= "point" ; selectedShapes . clear( ) ; return ; } if ( key== 'l' || key== 'L' ) { mode= "line" ; selectedShapes . clear( ) ; return ; } if ( key== 'b' || key== 'B' ) { mode= "rectangle" ; selectedShapes . clear( ) ; return ; } if ( key== 'e' || key== 'E' ) { mode= "ellipse" ; selectedShapes . clear( ) ; return ; } if ( key== 'w' || key== 'W' ) { mode= "window" ; selectedShapes . clear( ) ; return ; } if ( key== 'c' || key== 'C' ) { showClipping= ! showClipping; return ; } if ( key== 'h' || key== 'H' ) { showHelp= ! showHelp; return ; } if ( key== 'f' || key== 'F' ) { fillEnabled= ! fillEnabled; return ; } } // Ctrl shortcuts
-if ( ( keyCode== CONTROL|| keyCode== 157 ) && ( key== 'a' || key== 'A' ) ) { selectedShapes . clear( ) ; for ( let s of shapes) { selectedShapes . add( s) ; } mode= "select" ; return ; } if ( ( keyCode== CONTROL|| keyCode== 157 ) && ( key== 'z' || key== 'Z' ) ) { undo( ) ; return ; } if ( ( keyCode== CONTROL|| keyCode== 157 ) && ( key== 'y' || key== 'Y' ) ) { redo( ) ; return ; } if ( ( keyCode== CONTROL|| keyCode== 157 ) && ( key== 's' || key== 'S' ) ) { saveImage( ) ; return ; } // Transform selected shapes (non-arrow keys)
-if ( selectedShapes . isEmpty( ) ) return ; let needsSave = true ; for ( let s of selectedShapes) { if ( key== 'r' ) { s . rotate( - radians( 15 ) ) ; } else if ( key== 'R' ) { s . rotate( radians( 15 ) ) ; } else if ( key== '+' || key== '=' ) { s . scale( 1.1) ; } else if ( key== '-' || key== '_' ) { s . scale( 0.9) ; } else if ( key== DELETE|| key== BACKSPACE) { // Will handle after loop
-} else if ( key== ESC) { selectedShapes . clear( ) ; key= 0 ; needsSave= false ; } else { needsSave= false ; } } // Delete selected
-if ( key== DELETE|| key== BACKSPACE) { shapes . removeAll( selectedShapes) ; selectedShapes . clear( ) ; saveToHistory( ) ; } else if ( needsSave) { saveToHistory( ) ; } } function saveToHistory ( ) { // Remove future history if we're not at the end
-while ( history . size( ) > historyIndex+ 1 ) { history . remove( history . size( ) - 1 ) ; } // Clone current shapes
-let snapshot = new ArrayList(); for ( let s of shapes) { snapshot . add( s . clone( ) ) ; } history . add( snapshot) ; historyIndex++ ; // Limit history size
-if ( history . size( ) > 50 ) { history . remove( 0 ) ; historyIndex-- ; } } function undo ( ) { if ( historyIndex> 0 ) { historyIndex-- ; shapes . clear( ) ; for ( let s of history . get( historyIndex) ) { shapes . add( s . clone( ) ) ; } selectedShapes . clear( ) ; } } function redo ( ) { if ( historyIndex< history . size( ) - 1 ) { historyIndex++ ; shapes . clear( ) ; for ( let s of history . get( historyIndex) ) { shapes . add( s . clone( ) ) ; } selectedShapes . clear( ) ; } } function saveImage ( ) { let filename = "paint_" + year( ) + nf( month( ) , 2 ) + nf( day( ) , 2 ) + "_" + nf( hour( ) , 2 ) + nf( minute( ) , 2 ) + nf( second( ) , 2 ) + ".png" ; save( filename) ; console.log( "Image saved as: " + filename) ; } // ==================== CLASSES ====================
-class Shape { col ; strokeW ; fill ; constructor( c , sw , f ) { this.col= c; this.strokeW= sw; this.fill= f; } display ( ) ; contains ( x , y ) ; translate ( dx , dy ) ; rotate ( angle ) ; scale ( factor ) ; drawSelection ( ) ; clone ( ) ; } class Point extends Shape { x ;y ; constructor( px , py , c , sw , f ) { super ( c, sw, f) ; this.x= px; this.y= py; } display ( ) { fill( col) ; noStroke( ) ; circle( this.x, this.y, strokeW* 4 ) ; } contains ( px , py ) { return dist( px, py, this.x, this.y) < 15 ; } translate ( dx , dy ) { this.x+= dx; this.y+= dy; } rotate ( angle ) { } scale ( factor ) { strokeW*= factor; } drawSelection ( ) { noFill( ) ; stroke( 255 , 100 , 100 ) ; strokeWeight( 2 ) ; circle( this.x, this.y, 30 ) ; } clone ( ) { return new Point ( this.x, this.y, col, strokeW, fill) ; } } class Line extends Shape { x1 ;y1 ;x2 ;y2 ; constructor( px1 , py1 , px2 , py2 , c , sw , f ) { super ( c, sw, f) ; this.x1= px1; this.y1= py1; this.x2= px2; this.y2= py2; } display ( ) { stroke( col) ; strokeWeight( strokeW) ; line( this.x1, this.y1, this.x2, this.y2) ; } contains ( px , py ) { let d = this.distToSegment( px, py, this.x1, this.y1, this.x2, this.y2) ; return d< 10 ; } distToSegment ( px , py , lx1 , ly1 , lx2 , ly2 ) { let dx = lx2- lx1; let dy = ly2- ly1; let t = ( ( px- lx1) * dx+ ( py- ly1) * dy) / ( dx* dx+ dy* dy) ; t= constrain( t, 0 , 1 ) ; let closestX = lx1+ t* dx; let closestY = ly1+ t* dy; return dist( px, py, closestX, closestY) ; } translate ( dx , dy ) { this.x1+= dx; this.y1+= dy; this.x2+= dx; this.y2+= dy; } rotate ( angle ) { let cx = ( this.x1+ this.x2) / 2 ; let cy = ( this.y1+ this.y2) / 2 ; let dx1 = this.x1- cx; let dy1 = this.y1- cy; let dx2 = this.x2- cx; let dy2 = this.y2- cy; this.x1= cx+ dx1* cos( angle) - dy1* sin( angle) ; this.y1= cy+ dx1* sin( angle) + dy1* cos( angle) ; this.x2= cx+ dx2* cos( angle) - dy2* sin( angle) ; this.y2= cy+ dx2* sin( angle) + dy2* cos( angle) ; } scale ( factor ) { let cx = ( this.x1+ this.x2) / 2 ; let cy = ( this.y1+ this.y2) / 2 ; this.x1= cx+ ( this.x1- cx) * factor; this.y1= cy+ ( this.y1- cy) * factor; this.x2= cx+ ( this.x2- cx) * factor; this.y2= cy+ ( this.y2- cy) * factor; } drawSelection ( ) { let minX = min( this.x1, this.x2) - 5 ; let minY = min( this.y1, this.y2) - 5 ; let maxX = max( this.x1, this.x2) + 5 ; let maxY = max( this.y1, this.y2) + 5 ; noFill( ) ; stroke( 255 , 100 , 100 ) ; strokeWeight( 2 ) ; rect( minX, minY, maxX- minX, maxY- minY) ; } clone ( ) { return new Line ( this.x1, this.y1, this.x2, this.y2, col, strokeW, fill) ; } } class Rectangle extends Shape { x ;y ;w ;h ; constructor( px , py , pw , ph , c , sw , f ) { super ( c, sw, f) ; this.x= px; this.y= py; this.w= pw; this.h= ph; } display ( ) { if ( fill) { fill( col) ; } else { noFill( ) ; } stroke( col) ; strokeWeight( strokeW) ; rect( this.x, this.y, this.w, this.h) ; } contains ( px , py ) { return px>= this.x&& px<= this.x+ this.w&& py>= this.y&& py<= this.y+ this.h; } translate ( dx , dy ) { this.x+= dx; this.y+= dy; } rotate ( angle ) { // Simple rotation not implemented for rectangles
-} scale ( factor ) { let cx = this.x+ this.w/ 2 ; let cy = this.y+ this.h/ 2 ; this.w*= factor; this.h*= factor; this.x= cx- this.w/ 2 ; this.y= cy- this.h/ 2 ; } drawSelection ( ) { noFill( ) ; stroke( 255 , 100 , 100 ) ; strokeWeight( 2 ) ; rect( this.x- 5 , this.y- 5 , this.w+ 10 , this.h+ 10 ) ; } clone ( ) { return new Rectangle ( this.x, this.y, this.w, this.h, col, strokeW, fill) ; } } class Ellipse extends Shape { x ;y ;w ;h ; constructor( px , py , pw , ph , c , sw , f ) { super ( c, sw, f) ; this.x= px; this.y= py; this.w= pw; this.h= ph; } display ( ) { if ( fill) { fill( col) ; } else { noFill( ) ; } stroke( col) ; strokeWeight( strokeW) ; ellipse( this.x+ this.w/ 2 , this.y+ this.h/ 2 , this.w, this.h) ; } contains ( px , py ) { let cx = this.x+ this.w/ 2 ; let cy = this.y+ this.h/ 2 ; let dx = ( px- cx) / ( this.w/ 2 ) ; let dy = ( py- cy) / ( this.h/ 2 ) ; return ( dx* dx+ dy* dy) <= 1 ; } translate ( dx , dy ) { this.x+= dx; this.y+= dy; } rotate ( angle ) { // Simple rotation not implemented for ellipses
-} scale ( factor ) { let cx = this.x+ this.w/ 2 ; let cy = this.y+ this.h/ 2 ; this.w*= factor; this.h*= factor; this.x= cx- this.w/ 2 ; this.y= cy- this.h/ 2 ; } drawSelection ( ) { noFill( ) ; stroke( 255 , 100 , 100 ) ; strokeWeight( 2 ) ; rect( this.x- 5 , this.y- 5 , this.w+ 10 , this.h+ 10 ) ; } clone ( ) { return new Ellipse ( this.x, this.y, this.w, this.h, col, strokeW, fill) ; } } class ClipWindow { x ;y ;w ;h ; constructor( px , py , pw , ph ) { this.x= px; this.y= py; this.w= pw; this.h= ph; } display ( isSetting ) { if ( isSetting) { stroke( 255 , 0 , 0 ) ; } else { stroke( 0 , 0 , 255 ) ; } strokeWeight( 2 ) ; noFill( ) ; rect( this.x, this.y, this.w, this.h) ; fill( 0 , 0 , 255 , 30 ) ; noStroke( ) ; rect( this.x, this.y, this.w, this.h) ; fill( 0 , 0 , 255 ) ; textAlign( CENTER, BOTTOM) ; textSize( 12 ) ; text( "CLIP WINDOW" , this.x+ this.w/ 2 , this.y- 5 ) ; } } 
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  ballX = width / 4;
+  ballY = height / 5;
+  ballColor = color(0);
+  racketColor = color(0);
+}
+
+function draw() {
+  if (gameScreen === 0) initScreen();
+  else if (gameScreen === 1) gameScreenFunc();
+  else if (gameScreen === 2) gameOverScreen();
+}
+
+function mousePressed() {
+  if (gameScreen === 0) startGame();
+  else if (gameScreen === 2) restart();
+}
+
+function startGame() {
+  gameScreen = 1;
+}
+
+function restart() {
+  score = 0;
+  health = maxHealth;
+  ballX = width / 4;
+  ballY = height / 5;
+  lastAddTime = 0;
+  walls = [];
+  gameScreen = 0;
+}
+
+function initScreen() {
+  background(0);
+  textAlign(CENTER);
+  fill(255);
+  text("Klik untuk memulai", width / 2, height / 2);
+}
+
+function gameScreenFunc() {
+  background(255);
+  drawBall();
+  applyGravity();
+  keepInScreen();
+  drawRacket();
+  watchRacketBounce();
+  applyHorizontalSpeed();
+  wallAdder();
+  wallHandler();
+  drawHealthBar();
+  printScore();
+}
+
+function drawBall() {
+  fill(ballColor);
+  ellipse(ballX, ballY, ballSize, ballSize);
+}
+
+function applyGravity() {
+  ballSpeedVert += gravity;
+  ballY += ballSpeedVert;
+  ballSpeedVert -= ballSpeedVert * airFriction;
+}
+
+function makeBounceBottom(surface) {
+  ballY = surface - ballSize / 2;
+  ballSpeedVert *= -1;
+  ballSpeedVert -= ballSpeedVert * friction;
+}
+
+function makeBounceTop(surface) {
+  ballY = surface + ballSize / 2;
+  ballSpeedVert *= -1;
+  ballSpeedVert -= ballSpeedVert * friction;
+}
+
+function keepInScreen() {
+  if (ballY + ballSize / 2 > height) makeBounceBottom(height);
+  if (ballY - ballSize / 2 < 0) makeBounceTop(0);
+  if (ballX - ballSize / 2 < 0) makeBounceLeft(0);
+  if (ballX + ballSize / 2 > width) makeBounceRight(width);
+}
+
+function drawRacket() {
+  fill(racketColor);
+  rectMode(CENTER);
+  rect(mouseX, mouseY, racketWidth, racketHeight);
+}
+
+function watchRacketBounce() {
+  let overhead = mouseY - pmouseY;
+  if (
+    ballX + ballSize / 2 > mouseX - racketWidth / 2 &&
+    ballX - ballSize / 2 < mouseX + racketWidth / 2
+  ) {
+    if (dist(ballX, ballY, ballX, mouseY) <= ballSize / 2 + abs(overhead)) {
+      makeBounceBottom(mouseY);
+      if (overhead < 0) {
+        ballY += overhead;
+        ballSpeedVert += overhead;
+      }
+      ballSpeedHorizon = (ballX - mouseX) / 5;
+    }
+  }
+}
+
+function applyHorizontalSpeed() {
+  ballX += ballSpeedHorizon;
+  ballSpeedHorizon -= ballSpeedHorizon * airFriction;
+}
+
+function makeBounceLeft(surface) {
+  ballX = surface + ballSize / 2;
+  ballSpeedHorizon *= -1;
+  ballSpeedHorizon -= ballSpeedHorizon * friction;
+}
+
+function makeBounceRight(surface) {
+  ballX = surface - ballSize / 2;
+  ballSpeedHorizon *= -1;
+  ballSpeedHorizon -= ballSpeedHorizon * friction;
+}
+
+function wallAdder() {
+  if (millis() - lastAddTime > wallInterval) {
+    wallColors = color(Math.random() * 255, Math.random() * 255, Math.random() * 255);
+    let randHeight = round(random(minGapHeight, maxGapHeight));
+    let randY = round(random(0, height - randHeight));
+    walls.push([width, randY, wallWidth, randHeight, 0, wallColors]);
+    lastAddTime = millis();
+  }
+}
+
+function wallHandler() {
+  for (let i = walls.length - 1; i >= 0; i--) {
+    wallRemover(i);
+    wallMover(i);
+    wallDrawer(i);
+    watchWallCollision(i);
+  }
+}
+
+function wallDrawer(index) {
+  let [x, y, w, h, _, color] = walls[index];
+  rectMode(CORNER);
+  fill(color);
+  rect(x, 0, w, y, 0,0,50,50);
+  rect(x, y + h, w, height - (y + h), 50,50,0,0);
+}
+
+function wallMover(index) {
+  walls[index][0] -= wallSpeed;
+}
+
+function wallRemover(index) {
+  if (walls[index][0] + walls[index][2] <= 0) walls.splice(index, 1);
+}
+
+function watchWallCollision(index) {
+  let [gapX, gapY, gapW, gapH, scored] = walls[index];
+
+  let topHit =
+    ballX + ballSize / 2 > gapX &&
+    ballX - ballSize / 2 < gapX + gapW &&
+    ballY - ballSize / 2 < gapY;
+
+  let bottomHit =
+    ballX + ballSize / 2 > gapX &&
+    ballX - ballSize / 2 < gapX + gapW &&
+    ballY + ballSize / 2 > gapY + gapH;
+
+  if (topHit || bottomHit) decreaseHealth();
+
+  if (ballX > gapX + gapW / 2 && scored === 0) {
+    walls[index][4] = 1;
+    score++;
+  }
+}
+
+function drawHealthBar() {
+  noStroke();
+  fill(236, 240, 241);
+  rect(ballX - healthBarWidth / 2, ballY - 30, healthBarWidth, 5);
+
+  if (health > 60) fill(46, 204, 113);
+  else if (health > 30) fill(230, 126, 34);
+  else fill(231, 76, 60);
+
+  rect(ballX - healthBarWidth / 2, ballY - 30, (healthBarWidth * health) / maxHealth, 5);
+}
+
+function decreaseHealth() {
+  health -= healthDecrease;
+  if (health <= 0) gameOver();
+}
+
+function gameOver() {
+  gameScreen = 2;
+}
+
+function gameOverScreen() {
+  background(0);
+  fill(255);
+  textAlign(CENTER);
+  textSize(30);
+  text("Game Over", width / 2, height / 2 - 30);
+  textSize(15);
+  text("Click to Restart", width / 2, height / 2 + 10);
+  printScore();
+}
+
+function printScore() {
+  textAlign(CENTER);
+  if (gameScreen === 1) {
+    fill(0);
+    textSize(30);
+    text(score, width / 2, 50);
+  } else if (gameScreen === 2) {
+    fill(255);
+    textSize(22);
+    text("Score: " + score, width / 2, height / 2 + 60);
+  }
+}
